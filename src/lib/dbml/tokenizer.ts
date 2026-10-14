@@ -17,8 +17,6 @@ function stripComments(input: string): string {
       i += 2;
       while (i < n && !(input[i] === "*" && input[i + 1] === "/")) i++;
       i += 2;
-    } else if (input[i] === "#") {
-      while (i < n && input[i] !== "\n") i++;
     } else {
       out += input[i];
       i++;
@@ -40,6 +38,14 @@ export function tokenize(input: string): Token[] {
     if (/\s/.test(c)) {
       if (c === "\n") line++;
       i++;
+      continue;
+    }
+
+    if (c === "#") {
+      let j = i + 1;
+      while (j < n && /[0-9a-fA-F]/.test(src[j])) j++;
+      tokens.push({ type: "ident", value: src.slice(i, j), line });
+      i = j;
       continue;
     }
 
@@ -90,7 +96,7 @@ export function tokenize(input: string): Token[] {
       continue;
     }
 
-    if ("{}[](),:><-=".includes(c)) {
+    if ("{}[](),:><-.=".includes(c)) {
       tokens.push({ type: "punct", value: c, line });
       i++;
       continue;

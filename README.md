@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DBML Studio
 
-## Getting Started
+Next.js + Node.js project providing a basic parser from **DBML** (Database Markup Language) syntax to **JSON**.
 
-First, run the development server:
+## Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+src/
+  app/                    Next.js app router (UI + API routes)
+    api/parse-dbml/       POST endpoint: parse DBML input
+  lib/dbml/               Core DBML parser module
+    tokenizer.ts           Lexer (comments, tokens)
+    parser.ts             Recursive-descent parser
+    types.ts              TypeScript types for the JSON output
+    index.ts              Public exports
+scripts/
+  test-parse.ts           Example usage of the parser
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usage
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Parser module
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```ts
+import { parseDBML } from "@/lib/dbml";
 
-## Learn More
+const result = parseDBML(`
+Table users {
+  id integer [pk, increment]
+  username varchar(255) [not null, unique]
+}
+`);
+console.log(JSON.stringify(result, null, 2));
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev   # http://localhost:3000
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Parse API
 
-## Deploy on Vercel
+`POST /api/parse-dbml` with JSON body `{ "input": "<dbml>" }`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Supported (basic)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `Table` (including schema-qualified and quoted names)
+- Columns with types (`varchar(255)`, etc.) and attributes (`pk`, `not null`, `unique`, `increment`, `default`, `note`, `ref`)
+- Inline and standalone `Ref`
+- `Enum`
+- `TableGroup`
+- Comments (`//`, `/* */`)
+
+JSON output includes tables, columns, refs, enums, table groups, and parse errors.

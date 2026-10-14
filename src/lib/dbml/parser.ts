@@ -205,6 +205,25 @@ class Parser {
     return stripQuotes(t.value);
   }
 
+  readQualifiedName(): string {
+    const first = this.readSingleNameToken();
+    const parts = [stripQuotes(first)];
+    while (this.peek()?.value === ".") {
+      this.next(); // .
+      const next = this.readSingleNameToken();
+      parts.push(stripQuotes(next));
+    }
+    return parts.join(".");
+  }
+
+  readSingleNameToken(): string {
+    const t = this.next();
+    if (!t) throw new Error("Expected name");
+    if (t.type === "string" || t.type === "ident") return t.value;
+    // fallback for numbers etc.
+    return t.value;
+  }
+
   parse(): DBMLParseResult {
     while (this.pos < this.tokens.length) {
       const t = this.peek();
@@ -226,7 +245,7 @@ class Parser {
 
   parseTable() {
     this.next(); // Table
-    const qName = this.readName();
+    const qName = this.readQualifiedName();
     const { schema, name } = splitQualifiedName(qName);
 
     let alias: string | undefined;
@@ -336,7 +355,7 @@ class Parser {
 
   parseEnum() {
     this.next(); // Enum
-    const qName = this.readName();
+    const qName = this.readQualifiedName();
     const { name, schema } = { ...splitQualifiedName(qName) };
 
     let eSchema: string | undefined = schema;
@@ -423,7 +442,7 @@ class Parser {
 
   parseTableGroup() {
     this.next(); // TableGroup
-    const name = this.readName();
+    const name = this.readQualifiedName();
     const grp: DBMLTableGroup = { name, tables: [] };
     if (this.peek()?.value === "[") this.consumeBalanced("[", "]");
     if (this.peek()?.value === "{") {
